@@ -360,7 +360,11 @@
           <div class="contact-info animate-on-scroll">
             <div class="contact-item">
               <i class="fas fa-envelope"></i>
-              <p>abduselammiz6@gmail.com</p>
+              <p>
+                <a href="mailto:abduselammiz6@gmail.com"
+                  >abduselammiz6@gmail.com</a
+                >
+              </p>
             </div>
             <div class="contact-item">
               <i class="fas fa-phone"></i>
@@ -371,19 +375,46 @@
               <p>Addis Abeba, Ethiopia</p>
             </div>
             <div class="social-links">
-              <a href="#" aria-label="LinkedIn"
+              <a
+                href="https://www.linkedin.com/in/abduselam-dev/"
+                aria-label="LinkedIn"
+                target="_blank"
+                rel="noopener noreferrer"
                 ><i class="fab fa-linkedin"></i
               ></a>
-              <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
-              <a href="#" aria-label="Twitter"
-                ><i class="fab fa-twitter"></i
-              ></a>
-              <a href="#" aria-label="Instagram"
-                ><i class="fab fa-instagram"></i
+              <a
+                href="https://github.com/amiz-seoat"
+                aria-label="GitHub"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><i class="fab fa-github"></i
               ></a>
             </div>
           </div>
-          <form id="contact-form" class="contact-form animate-on-scroll">
+          <form
+            id="contact-form"
+            class="contact-form animate-on-scroll"
+            novalidate
+          >
+            <div
+              id="form-status"
+              class="form-status"
+              role="alert"
+              aria-live="polite"
+              hidden
+            ></div>
+
+            <div class="form-group honeypot-field" aria-hidden="true">
+              <label for="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </div>
+
             <div class="form-group">
               <label for="name">Name</label>
               <input
@@ -391,7 +422,10 @@
                 id="name"
                 name="name"
                 class="input-field"
+                autocomplete="name"
                 required
+                minlength="2"
+                maxlength="100"
               />
               <span id="name-error" class="error-message"></span>
             </div>
@@ -402,7 +436,9 @@
                 id="email"
                 name="email"
                 class="input-field"
+                autocomplete="email"
                 required
+                maxlength="254"
               />
               <span id="email-error" class="error-message"></span>
             </div>
@@ -414,11 +450,13 @@
                 rows="5"
                 class="input-field"
                 required
+                minlength="10"
+                maxlength="2000"
               ></textarea>
               <span id="message-error" class="error-message"></span>
             </div>
             <button type="submit" id="submit-button" class="btn-primary">
-              Send Message
+              <span class="btn-text">Send Message</span>
             </button>
           </form>
         </div>

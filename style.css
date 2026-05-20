@@ -1037,6 +1037,16 @@ nav {
   gap: var(--spacing-md);
 }
 
+.contact-item a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+.contact-item a:hover {
+  color: var(--primary-blue);
+}
+
 .social-links a {
   display: flex;
   justify-content: center;
@@ -1136,6 +1146,90 @@ nav {
   font-size: 0.875rem;
   margin-top: var(--spacing-xs);
   display: block;
+  min-height: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.error-message.visible {
+  opacity: 1;
+}
+
+.input-field.invalid {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.honeypot-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.form-status {
+  padding: 1rem;
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  animation: slideInTop 0.4s ease;
+}
+
+.form-status i {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.form-status.success {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.form-status.error {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.dark-mode .form-status.success {
+  color: #4ade80;
+}
+
+.dark-mode .form-status.error {
+  color: #f87171;
+}
+
+#submit-button {
+  min-width: 160px;
+}
+
+#submit-button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#submit-button .fa-spinner {
+  margin-right: 0.5rem;
+}
+
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Footer */

@@ -143,8 +143,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('contact-form');
     
     if (!form) return;
+
+    const CONTACT_EMAIL = 'abduselammiz6@gmail.com';
+    const FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
     
-    const formElements = form.querySelectorAll('input, textarea');
+    const formElements = form.querySelectorAll('#name, #email, #message');
+    const formStatus = document.getElementById('form-status');
+    const submitButton = document.getElementById('submit-button');
+    const btnText = submitButton?.querySelector('.btn-text');
+    const honeypot = document.getElementById('website');
+
     formElements.forEach((element) => {
       element.addEventListener('focus', () => {
         element.parentElement.classList.add('focused');
@@ -155,111 +163,152 @@ document.addEventListener('DOMContentLoaded', () => {
           element.parentElement.classList.remove('focused');
         }
       });
+
+      element.addEventListener('input', () => {
+        clearFieldError(element);
+      });
     });
-    
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      let valid = true;
+
+    function clearFieldError(input) {
+      input.classList.remove('invalid');
+      const errorId = `${input.id}-error`;
+      const error = document.getElementById(errorId);
+      if (error) {
+        error.textContent = '';
+        error.classList.remove('visible');
+      }
+    }
+
+    function showFieldError(input, message) {
+      input.classList.add('invalid');
+      const error = document.getElementById(`${input.id}-error`);
+      if (error) {
+        error.textContent = message;
+        error.classList.add('visible');
+      }
+      input.classList.add('shake');
+      setTimeout(() => input.classList.remove('shake'), 500);
+    }
+
+    function clearFormStatus() {
+      if (!formStatus) return;
+      formStatus.hidden = true;
+      formStatus.className = 'form-status';
+      formStatus.textContent = '';
+    }
+
+    function showFormStatus(type, message) {
+      if (!formStatus) return;
+      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+      formStatus.hidden = false;
+      formStatus.className = `form-status ${type}`;
+      formStatus.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+    }
+
+    function setLoading(isLoading) {
+      if (!submitButton || !btnText) return;
+      submitButton.disabled = isLoading;
+      btnText.innerHTML = isLoading
+        ? '<i class="fas fa-spinner fa-spin"></i> Sending...'
+        : 'Send Message';
+    }
+
+    function validateForm() {
       const nameInput = document.getElementById('name');
       const emailInput = document.getElementById('email');
       const messageInput = document.getElementById('message');
-      
+      let valid = true;
+
       document.querySelectorAll('.error-message').forEach((el) => {
         el.textContent = '';
-        el.style.height = '0';
-        el.style.opacity = '0';
+        el.classList.remove('visible');
       });
-      
-      if (!nameInput.value.trim()) {
+      formElements.forEach((el) => el.classList.remove('invalid'));
+
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const message = messageInput.value.trim();
+
+      if (!name) {
+        showFieldError(nameInput, 'Name is required');
         valid = false;
-        const error = document.getElementById('name-error');
-        if (error) {
-          error.textContent = 'Name is required';
-          error.style.height = 'auto';
-          error.style.opacity = '1';
-          nameInput.classList.add('shake');
-          setTimeout(() => nameInput.classList.remove('shake'), 500);
-        }
+      } else if (name.length < 2) {
+        showFieldError(nameInput, 'Name must be at least 2 characters');
+        valid = false;
       }
-      if (!emailInput.value.trim()) {
+
+      if (!email) {
+        showFieldError(emailInput, 'Email is required');
         valid = false;
-        const error = document.getElementById('email-error');
-        if (error) {
-          error.textContent = 'Email is required';
-          error.style.height = 'auto';
-          error.style.opacity = '1';
-          emailInput.classList.add('shake');
-          setTimeout(() => emailInput.classList.remove('shake'), 500);
-        }
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError(emailInput, 'Please enter a valid email address');
         valid = false;
-        const error = document.getElementById('email-error');
-        if (error) {
-          error.textContent = 'Please enter a valid email';
-          error.style.height = 'auto';
-          error.style.opacity = '1';
-          emailInput.classList.add('shake');
-          setTimeout(() => emailInput.classList.remove('shake'), 500);
-        }
       }
-      
-      if (!messageInput.value.trim()) {
+
+      if (!message) {
+        showFieldError(messageInput, 'Message is required');
         valid = false;
-        const error = document.getElementById('message-error');
-        if (error) {
-          error.textContent = 'Message is required';
-          error.style.height = 'auto';
-          error.style.opacity = '1';
-          messageInput.classList.add('shake');
-          setTimeout(() => messageInput.classList.remove('shake'), 500);
-        }
+      } else if (message.length < 10) {
+        showFieldError(messageInput, 'Message must be at least 10 characters');
+        valid = false;
       }
-      
-      if (valid) {
-        const submitButton = document.getElementById('submit-button');
-        if (submitButton) {
-          submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-          submitButton.disabled = true;
+
+      return valid
+        ? { name, email, message }
+        : null;
+    }
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearFormStatus();
+
+      if (honeypot && honeypot.value) {
+        return;
+      }
+
+      const formData = validateForm();
+      if (!formData) return;
+
+      setLoading(true);
+
+      try {
+        const response = await fetch(FORM_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+            _subject: `Portfolio Contact from ${formData.name}`,
+            _replyto: formData.email,
+            _template: 'table',
+            _captcha: 'false',
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.success === 'false') {
+          throw new Error(data.message || 'Unable to send your message. Please try again.');
         }
-        
-        setTimeout(() => {
-          form.reset();
-          formElements.forEach(el => el.parentElement.classList.remove('focused'));
-          
-          const successMessage = document.createElement('div');
-          successMessage.className = 'p-4 bg-green-100 text-green-800 rounded-md mb-4 slide-in-top';
-          successMessage.style.padding = '1rem';
-          successMessage.style.backgroundColor = '#dcfce7';
-          successMessage.style.color = '#166534';
-          successMessage.style.borderRadius = '0.5rem';
-          successMessage.style.marginBottom = '1rem';
-          successMessage.style.transform = 'translateY(-20px)';
-          successMessage.style.opacity = '0';
-          successMessage.style.transition = 'all 0.5s ease';
-          successMessage.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Your message has been sent successfully!';
-          
-          form.insertBefore(successMessage, form.firstChild);
-          
-          setTimeout(() => {
-            successMessage.style.transform = 'translateY(0)';
-            successMessage.style.opacity = '1';
-          }, 10);
-          
-          if (submitButton) {
-            submitButton.innerHTML = 'Send Message';
-            submitButton.disabled = false;
-          }
-          
-          setTimeout(() => {
-            successMessage.style.transform = 'translateY(-20px)';
-            successMessage.style.opacity = '0';
-            
-            setTimeout(() => {
-              successMessage.remove();
-            }, 500);
-          }, 5000);
-        }, 1500);
+
+        form.reset();
+        formElements.forEach((el) => el.parentElement.classList.remove('focused'));
+        showFormStatus(
+          'success',
+          'Your message has been sent successfully! I will get back to you soon.'
+        );
+      } catch (error) {
+        showFormStatus(
+          'error',
+          error.message ||
+            'Something went wrong while sending your message. Please try again or email me directly.'
+        );
+      } finally {
+        setLoading(false);
       }
     });
   }
