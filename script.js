@@ -143,15 +143,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('contact-form');
     
     if (!form) return;
-
-    const CONTACT_EMAIL = 'abduselammiz6@gmail.com';
-    const FORM_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
     
     const formElements = form.querySelectorAll('#name, #email, #message');
     const formStatus = document.getElementById('form-status');
     const submitButton = document.getElementById('submit-button');
     const btnText = submitButton?.querySelector('.btn-text');
-    const honeypot = document.getElementById('website');
+    const honeypot = document.getElementById('_honey');
+    const subjectInput = document.getElementById('_subject');
+    const nextInput = document.getElementById('_next');
 
     formElements.forEach((element) => {
       element.addEventListener('focus', () => {
@@ -197,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
       formStatus.textContent = '';
     }
 
-    function showFormStatus(type, message, includeMailto = false) {
+    function showFormStatus(type, message) {
       if (!formStatus) return;
       const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
       formStatus.hidden = false;
@@ -210,16 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.assign(document.createElement('i'), { className: `fas ${icon}` }),
         messageEl
       );
-
-      if (includeMailto) {
-        const mailLink = document.createElement('a');
-        mailLink.href = `mailto:${CONTACT_EMAIL}`;
-        mailLink.textContent = CONTACT_EMAIL;
-        mailLink.style.marginLeft = '0.25rem';
-        mailLink.style.color = 'inherit';
-        mailLink.style.fontWeight = '600';
-        messageEl.append(' ', mailLink);
-      }
     }
 
     function setLoading(isLoading) {
@@ -270,12 +259,23 @@ document.addEventListener('DOMContentLoaded', () => {
         valid = false;
       }
 
-      return valid
-        ? { name, email, message }
-        : null;
+      return valid ? { name, email, message } : null;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('contact') === 'success') {
+      showFormStatus(
+        'success',
+        'Your message has been sent successfully! I will get back to you soon.'
+      );
+
+      if (window.location.protocol.startsWith('http')) {
+        const cleanUrl = `${window.location.origin}${window.location.pathname}#contact`;
+        window.history.replaceState({}, '', cleanUrl);
+      }
     }
     
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       clearFormStatus();
 
@@ -286,48 +286,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = validateForm();
       if (!formData) return;
 
-      setLoading(true);
-
-      try {
-        const response = await fetch(FORM_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            message: formData.message,
-            _subject: `Portfolio Contact from ${formData.name}`,
-            _replyto: formData.email,
-            _template: 'table',
-            _captcha: 'false',
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || data.success === 'false' || data.success === false) {
-          throw new Error(data.message || 'Unable to send your message. Please try again.');
-        }
-
-        form.reset();
-        formElements.forEach((el) => el.parentElement.classList.remove('focused'));
-        showFormStatus(
-          'success',
-          'Your message has been sent successfully! I will get back to you soon.'
-        );
-      } catch (error) {
-        showFormStatus(
-          'error',
-          error.message ||
-            'Something went wrong while sending your message. Please try again or email me directly at',
-          true
-        );
-      } finally {
-        setLoading(false);
+      if (subjectInput) {
+        subjectInput.value = `Portfolio Contact from ${formData.name}`;
       }
+
+      if (nextInput && window.location.protocol.startsWith('http')) {
+        const returnUrl = new URL(window.location.href);
+        returnUrl.searchParams.set('contact', 'success');
+        returnUrl.hash = 'contact';
+        nextInput.value = returnUrl.toString();
+      }
+
+      setLoading(true);
+      form.submit();
     });
   }
   
