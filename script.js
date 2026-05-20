@@ -143,14 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('contact-form');
     
     if (!form) return;
+
+    const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+    const config = window.CONTACT_CONFIG || {};
     
     const formElements = form.querySelectorAll('#name, #email, #message');
     const formStatus = document.getElementById('form-status');
     const submitButton = document.getElementById('submit-button');
     const btnText = submitButton?.querySelector('.btn-text');
-    const honeypot = document.getElementById('_honey');
-    const subjectInput = document.getElementById('_subject');
-    const nextInput = document.getElementById('_next');
+    const honeypot = document.getElementById('botcheck');
 
     formElements.forEach((element) => {
       element.addEventListener('focus', () => {
@@ -219,6 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
         : 'Send Message';
     }
 
+    function isAccessKeyConfigured() {
+      return (
+        config.accessKey &&
+        config.accessKey !== 'YOUR_ACCESS_KEY_HERE'
+      );
+    }
+
     function validateForm() {
       const nameInput = document.getElementById('name');
       const emailInput = document.getElementById('email');
@@ -261,21 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return valid ? { name, email, message } : null;
     }
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('contact') === 'success') {
-      showFormStatus(
-        'success',
-        'Your message has been sent successfully! I will get back to you soon.'
-      );
-
-      if (window.location.protocol.startsWith('http')) {
-        const cleanUrl = `${window.location.origin}${window.location.pathname}#contact`;
-        window.history.replaceState({}, '', cleanUrl);
-      }
-    }
     
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearFormStatus();
 
@@ -286,19 +281,57 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = validateForm();
       if (!formData) return;
 
-      if (subjectInput) {
-        subjectInput.value = `Portfolio Contact from ${formData.name}`;
-      }
-
-      if (nextInput && window.location.protocol.startsWith('http')) {
-        const returnUrl = new URL(window.location.href);
-        returnUrl.searchParams.set('contact', 'success');
-        returnUrl.hash = 'contact';
-        nextInput.value = returnUrl.toString();
+      if (!isAccessKeyConfigured()) {
+        showFormStatus(
+          'error',
+          'Contact form is not configured yet. Add your free Web3Forms access key in contact-config.js (get one at web3forms.com).'
+        );
+        return;
       }
 
       setLoading(true);
-      form.submit();
+
+      try {
+        const response = await fetch(WEB3FORMS_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            access_key: config.accessKey,
+            subject: `Portfolio Contact from ${formData.name}`,
+            from_name: formData.name,
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+            botcheck: '',
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message || 'Unable to send your message. Please try again.'
+          );
+        }
+
+        form.reset();
+        formElements.forEach((el) => el.parentElement.classList.remove('focused'));
+        showFormStatus(
+          'success',
+          'Your message has been sent successfully! I will get back to you soon.'
+        );
+      } catch (error) {
+        const fallbackEmail = config.recipientEmail || 'abduselammiz6@gmail.com';
+        showFormStatus(
+          'error',
+          `${error.message || 'Something went wrong.'} You can also email me directly at ${fallbackEmail}.`
+        );
+      } finally {
+        setLoading(false);
+      }
     });
   }
   
