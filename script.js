@@ -197,12 +197,29 @@ document.addEventListener('DOMContentLoaded', () => {
       formStatus.textContent = '';
     }
 
-    function showFormStatus(type, message) {
+    function showFormStatus(type, message, includeMailto = false) {
       if (!formStatus) return;
       const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
       formStatus.hidden = false;
       formStatus.className = `form-status ${type}`;
-      formStatus.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+
+      const messageEl = document.createElement('span');
+      messageEl.textContent = message;
+
+      formStatus.replaceChildren(
+        Object.assign(document.createElement('i'), { className: `fas ${icon}` }),
+        messageEl
+      );
+
+      if (includeMailto) {
+        const mailLink = document.createElement('a');
+        mailLink.href = `mailto:${CONTACT_EMAIL}`;
+        mailLink.textContent = CONTACT_EMAIL;
+        mailLink.style.marginLeft = '0.25rem';
+        mailLink.style.color = 'inherit';
+        mailLink.style.fontWeight = '600';
+        messageEl.append(' ', mailLink);
+      }
     }
 
     function setLoading(isLoading) {
@@ -291,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = await response.json();
 
-        if (!response.ok || data.success === 'false') {
+        if (!response.ok || data.success === 'false' || data.success === false) {
           throw new Error(data.message || 'Unable to send your message. Please try again.');
         }
 
@@ -305,7 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showFormStatus(
           'error',
           error.message ||
-            'Something went wrong while sending your message. Please try again or email me directly.'
+            'Something went wrong while sending your message. Please try again or email me directly at',
+          true
         );
       } finally {
         setLoading(false);
